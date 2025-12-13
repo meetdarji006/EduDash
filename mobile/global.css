@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    * {
+        font-family: 'Ubuntu';
+    }
+}
+
+@layer components {
+
+    .text-light {
+        font-family: 'Ubuntu_300';
+    }
+
+    .text-normal {
+        font-family: 'Ubuntu';
+    }
+
+    .text-medium {
+        font-family: 'Ubuntu_500';
+    }
+
+    .text-bold {
+        font-family: 'Ubuntu_700';
+    }
+}
