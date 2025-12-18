@@ -18,7 +18,7 @@ export const getAllSubjects = async (req: Request, res: Response) => {
             .from(subjects)
             .where(
                 and(
-                    eq(subjects.courseId, courseId),
+                    eq(subjects.courseId, courseId as string),
                     eq(subjects.semester, Number(semester))
                 )
             );
@@ -89,7 +89,7 @@ export const deleteSubject = async (req: Request, res: Response) => {
     try {
         const { subjectId } = req.params;
         if (subjectId)
-            await db.delete(users).where(eq(subjects.id, subjectId));
+            await db.delete(subjects).where(eq(subjects.id, subjectId));
         else
             return res.status(STATUS_CODES.BAD_REQUEST).json(new ErrorResponse(STATUS_CODES.BAD_REQUEST, "No UID Found"));
 

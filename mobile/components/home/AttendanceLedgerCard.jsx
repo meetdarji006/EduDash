@@ -16,7 +16,7 @@ const getStatusTheme = (status) => {
 };
 
 const LedgerRow = ({ item, isLast }) => {
-    console.log(item)
+    //console.log(item)
     const theme = getStatusTheme(item.status);
 
     return (

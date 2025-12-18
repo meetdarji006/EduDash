@@ -65,7 +65,7 @@ const AttendanceStackedChart = ({ data }) => {
             <View className="flex-row items-start justify-between mb-8">
                 <View>
                     <Text style={{ fontWeight: 800 }} className="text-slate-400 text-[10px] uppercase leading-none mb-1">
-                        Breakdown
+                        This Month
                     </Text>
                     <View className="flex-row items-center">
                         <Text style={{ fontWeight: 800 }} className="text-xl text-slate-900 mr-2">

@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { createAdmin, createStudent, createTeacher, deleteAdmin, deleteStudent, deleteTeacher, updateAdmin, updateStudent, updateTeacher } from '../controllers/userController';
+import { createAdmin, createStudent, createTeacher, deleteAdmin, deleteStudent, deleteTeacher, updateAdmin, updateStudent, updateTeacher,getAllStudents } from '../controllers/userController';
+import { updateMarks } from '../controllers/testController';
 
 const router = Router();
 
@@ -14,5 +15,9 @@ router.delete('/student/:uid', deleteStudent);
 router.post('/admin', createAdmin);
 router.put('/admin', updateAdmin);
 router.delete('/admin/:uid', deleteAdmin);
+
+router.get('/students', getAllStudents);
+router.post('/marks', updateMarks);
+
 
 export default router;

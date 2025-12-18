@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
     const [isTokenLoaded, setIsTokenLoaded] = useState(false);
 
     // Fetch user data if token exists
-    const { data: userData, isLoading: isUserLoading, refetch } = useUserQuery(!!userToken);
+    const { data: userResponse, isLoading: isUserLoading, refetch } = useUserQuery(!!userToken);
 
     useEffect(() => {
         const isUserLoggedIn = async () => {
@@ -52,8 +52,10 @@ export const AuthProvider = ({ children }) => {
     // Global loading state: waiting for token check OR (token exists AND waiting for user data)
     const isLoading = !isTokenLoaded || (!!userToken && isUserLoading);
 
+    const user = userResponse?.data;
+
     return (
-        <AuthContext.Provider value={{ userToken, userData, isLoading, signIn, signOut, refetchUser: refetch }}>
+        <AuthContext.Provider value={{ userToken, userResponse, user, isLoading, signIn, signOut, refetchUser: refetch }}>
             {children}
         </AuthContext.Provider>
     );

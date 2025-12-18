@@ -29,17 +29,31 @@ const AttendanceHero = ({ data }) => {
     });
 
     const { totalDays, halfDays, presentDays, absentDays, percentage } = useMemo(() => {
-        if (data && Object.keys(data).length > 0) {
-            const totalDays = Number(data.TOTAL || 0);
-            const presentDays = Number(data.PRESENT || 0);
-            const absentDays = Number(data.ABSENT || 0);
-            const halfDays = Number(data.LATE || 0);
-            // Avoid division by zero
-            const percentage = totalDays > 0 ? (presentDays / totalDays) * 100 : 0;
-            return { totalDays, presentDays, absentDays, percentage: percentage.toFixed(0), halfDays };
+        let total = 0;
+        let present = 0;
+        let absent = 0;
+        let half = 0;
+
+        if (data) {
+            Object.values(data).forEach(month => {
+                if (month?.stats) {
+                    total += Number(month.stats.TOTAL || 0);
+                    present += Number(month.stats.PRESENT || 0);
+                    absent += Number(month.stats.ABSENT || 0);
+                    half += Number(month.stats.LATE || 0);
+                }
+            });
         }
-        return { totalDays: 0, presentDays: 0, absentDays: 0, percentage: 0, halfDays: 0 };
-    }, [data])
+
+        const percentageVal = total > 0 ? (present / total) * 100 : 0;
+        return {
+            totalDays: total,
+            presentDays: present,
+            absentDays: absent,
+            halfDays: half,
+            percentage: percentageVal.toFixed(0)
+        };
+    }, [data]);
 
     const progressOffset = CIRCUMFERENCE * (1 - (Number(percentage) || 0) / 100);
 

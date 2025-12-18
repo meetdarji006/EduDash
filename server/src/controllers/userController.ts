@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { db } from '../db/connection';
-import { students, teachers, users } from '../db/schema';
+import { students, teachers, users, courses } from '../db/schema';
 import { STATUS_CODES } from '../utils/constants';
 import { ApiResponse, ErrorResponse } from '../utils/response';
 import { and, eq } from 'drizzle-orm';
@@ -123,7 +123,7 @@ export const deleteTeacher = async (req: Request, res: Response) => {
         else
             return res.status(STATUS_CODES.BAD_REQUEST).json(new ErrorResponse(STATUS_CODES.BAD_REQUEST, "No UID Found"));
 
-        return res.status(STATUS_CODES.OK).json(new ApiResponse(STATUS_CODES.OK, null, "Updated Successfully"));
+        return res.status(STATUS_CODES.OK).json(new ApiResponse(STATUS_CODES.OK, null, "Deleted Successfully"));
 
     } catch (error) {
         return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json(new ErrorResponse(STATUS_CODES.INTERNAL_SERVER_ERROR, error instanceof Error ? error.message : 'Unknown error'));
@@ -132,20 +132,30 @@ export const deleteTeacher = async (req: Request, res: Response) => {
 
 export const createStudent = async (req: Request, res: Response) => {
     try {
-        const { name, username, password, courseId, rollNo, semester, phone, address } = req.body;
+        const { name, password, courseId, rollNo, semester, phone, address } = req.body;
 
-        if (!name || !username || !password || !courseId || !rollNo || !semester) {
+        if (!name || !password || !courseId || !rollNo || !semester) {
             return res.status(400).json(new ErrorResponse(400, "All Fields Required"));
         }
+
+        // Fetch course name for username generation
+        const [course] = await db.select().from(courses).where(eq(courses.id, courseId)).limit(1);
+        if (!course) {
+            return res.status(400).json(new ErrorResponse(400, "Invalid Course Id"));
+        }
+
+        // Generate username: coursename_semester_rollno
+        const normalizedCourseName = course.name.toLowerCase().replace(/\s+/g, '');
+        const generatedUsername = `${normalizedCourseName}_${semester}_${rollNo}`;
 
         const [isExisting] = await db
             .select()
             .from(users)
-            .where(eq(users.username, username))
+            .where(eq(users.username, generatedUsername))
             .limit(1);
 
         if (isExisting) {
-            return res.status(400).json(new ErrorResponse(400, "Student Already Exists."));
+            return res.status(400).json(new ErrorResponse(400, `Student with username ${generatedUsername} already exists.`));
         }
 
         const encryptedPassword = await bcrypt.hash(password, 10);
@@ -158,7 +168,7 @@ export const createStudent = async (req: Request, res: Response) => {
                 .insert(users)
                 .values({
                     name,
-                    username,
+                    username: generatedUsername,
                     password: encryptedPassword
                 })
                 .returning();
@@ -178,7 +188,7 @@ export const createStudent = async (req: Request, res: Response) => {
                 phone: phone || null
             });
 
-            return newUser;
+            return { ...newUser, username: generatedUsername };
         });
 
         // 🔥 TRANSACTION END - committed successfully
@@ -199,21 +209,38 @@ export const updateStudent = async (req: Request, res: Response) => { }
 export const deleteStudent = async (req: Request, res: Response) => {
     try {
         const { uid } = req.params;
-        if (uid)
-            await db.delete(users).where(eq(users.id, uid));
-        else
+        if (!uid) {
             return res.status(STATUS_CODES.BAD_REQUEST).json(new ErrorResponse(STATUS_CODES.BAD_REQUEST, "No UID Found"));
+        }
 
-        return res.status(STATUS_CODES.OK).json(new ApiResponse(STATUS_CODES.OK, null, "Delete Successfully"));
+        // 1. Check if the provided UID is a student ID
+        const [student] = await db.select().from(students).where(eq(students.id, uid)).limit(1);
+
+        const userIdToDelete = student ? student.userId : uid;
+
+        if (!userIdToDelete) {
+            return res.status(STATUS_CODES.BAD_REQUEST).json(new ErrorResponse(STATUS_CODES.BAD_REQUEST, "Invalid User ID"));
+        }
+
+        // 2. Delete from users table (cascades to students table)
+        const result = await db.delete(users).where(eq(users.id, userIdToDelete)).returning();
+
+        if (result.length === 0) {
+            return res.status(STATUS_CODES.NOT_FOUND).json(new ErrorResponse(STATUS_CODES.NOT_FOUND, "User not found"));
+        }
+
+        return res.status(STATUS_CODES.OK).json(new ApiResponse(STATUS_CODES.OK, null, "Deleted Successfully"));
 
     } catch (error) {
         return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json(new ErrorResponse(STATUS_CODES.INTERNAL_SERVER_ERROR, error instanceof Error ? error.message : 'Unknown error'));
     }
 }
 
-export const getAllStudent = async (req: Request, res: Response) => {
+export const getAllStudents = async (req: Request, res: Response) => {
     try {
         const { courseId, semester } = req.query;
+
+        // console.log(courseId);
 
         if (!courseId || !semester) {
             return res.status(STATUS_CODES.BAD_REQUEST).json(new ErrorResponse(STATUS_CODES.BAD_REQUEST, "All Fields Required"));
@@ -229,7 +256,7 @@ export const getAllStudent = async (req: Request, res: Response) => {
             .innerJoin(users, eq(students.userId, users.id))
             .where(
                 and(
-                    eq(students.courseId, courseId),
+                    eq(students.courseId, courseId as string),
                     eq(students.semester, Number(semester))
                 )
             );

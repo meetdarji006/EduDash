@@ -46,7 +46,7 @@ export const getAttendance = async (req: Request, res: Response) => {
 
     const { date, semester, courseId } = req.query as { date: string; semester: string; courseId: string };
 
-    console.log("Get attendance request params:", { date, semester, courseId });
+    //console.log("Get attendance request params:", { date, semester, courseId });
 
     try {
         if (!date || !semester || !courseId) {
@@ -165,7 +165,7 @@ export const getStudentAttendanceHistory = async (req: Request, res: Response) =
             .where(eq(attendance.studentId, studentId))
             .orderBy(attendance.date);
 
-            console.log(attendanceRecords)
+            //console.log(attendanceRecords)
 
         // 2. Group by Month with Details
         const history: Record<string, any> = {};
@@ -201,7 +201,7 @@ export const getStudentAttendanceHistory = async (req: Request, res: Response) =
             });
         });
 
-        console.log(history)
+        //console.log(history)
 
         return res.status(STATUS_CODES.OK).json(new ApiResponse(STATUS_CODES.OK, {
             studentId,
@@ -213,3 +213,4 @@ export const getStudentAttendanceHistory = async (req: Request, res: Response) =
         return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json(new ErrorResponse(STATUS_CODES.INTERNAL_SERVER_ERROR, error instanceof Error ? error.message : 'Unknown error'));
     }
 }
+

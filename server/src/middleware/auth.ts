@@ -7,7 +7,7 @@ import { users } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import "dotenv/config"
 
-interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends Request {
     userId?: string;
     userRole?: string;
 }
@@ -35,7 +35,7 @@ export const isAuthenticated = async (req: AuthenticatedRequest, res: Response, 
         req.userId = user.id;
         req.userRole = user.role;
 
-        next();
+        return next();
     } catch (error) {
         return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json(new ErrorResponse(STATUS_CODES.INTERNAL_SERVER_ERROR, error instanceof Error ? error.message : 'Unknown error'));
     }
@@ -71,7 +71,7 @@ export const authorizeRoles = (roles: string[]) => {
 
     return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
         try {
-            console.log(req.userRole);
+            //console.log(req.userRole);
             if (!req.userRole) {
                 return res
                     .status(STATUS_CODES.UNAUTHORISED)
@@ -89,7 +89,7 @@ export const authorizeRoles = (roles: string[]) => {
                     );
             }
 
-            next();
+            return next();
         } catch (error) {
             return res
                 .status(STATUS_CODES.INTERNAL_SERVER_ERROR)

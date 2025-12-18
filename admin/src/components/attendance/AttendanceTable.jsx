@@ -1,14 +1,14 @@
 import React from 'react';
 import { CheckCircle, XCircle, Clock, Search } from 'lucide-react';
 
-const AttendanceTable = ({ currentStudents, handleStatusChange }) => {
+const AttendanceTable = ({ currentStudents, handleStatusChange, selectedCourseId, selectedSemester }) => {
     return (
         <div className="overflow-x-auto">
             <table className="w-full whitespace-nowrap">
-                <thead className="bg-slate-50 border-b border-slate-100 text-left">
+                <thead className="bg-slate-50/50 border-b border-slate-100 text-left">
                     <tr>
-                        <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Student</th>
-                        <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">Attendance Status</th>
+                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Student Profile</th>
+                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-center">Attendance Status</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -17,12 +17,12 @@ const AttendanceTable = ({ currentStudents, handleStatusChange }) => {
                             <tr key={student.studentId} className="hover:bg-slate-50/50 transition-colors group">
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold uppercase">
+                                        <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-bold uppercase">
                                             {student.name.charAt(0)}
                                         </div>
                                         <div>
                                             <div className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{student.name}</div>
-                                            <div className="text-xs text-slate-500 font-mono mt-0.5">{student.rollno}</div>
+                                            <div className="text-xs text-slate-500 font-mono mt-0.5 bg-slate-100 px-1.5 py-0.5 rounded w-fit">{student.rollNo}</div>
                                         </div>
                                     </div>
                                 </td>
@@ -64,8 +64,14 @@ const AttendanceTable = ({ currentStudents, handleStatusChange }) => {
                             <td colSpan="3" className="px-6 py-12 text-center">
                                 <div className="flex flex-col items-center justify-center text-slate-400">
                                     <Search size={48} className="text-slate-200 mb-4" />
-                                    <p className="text-sm font-medium">No students found</p>
-                                    <p className="text-xs mt-1">Try adjusting your search terms</p>
+                                    <h3 className="text-slate-900 font-bold text-lg">
+                                        {(!selectedCourseId || !selectedSemester) ? "No Course Selected" : "No Students Found"}
+                                    </h3>
+                                    <p className="text-sm text-slate-500 mt-1">
+                                        {(!selectedCourseId || !selectedSemester)
+                                            ? "Please select a Course and Semester above to view the attendance list."
+                                            : "Try adjusting your search terms or checks back later."}
+                                    </p>
                                 </div>
                             </td>
                         </tr>

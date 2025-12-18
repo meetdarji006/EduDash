@@ -1,9 +1,9 @@
+import { Feather } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
-import NotificationModal from '../../components/NotificationModal';
 import { useAuth } from '../../context/AuthContext';
+
 const TabLayout = () => {
     const { userToken } = useAuth();
 
@@ -64,7 +64,6 @@ const TabLayout = () => {
                     }}
                 />
             </Tabs>
-            <NotificationModal visible={false} />
         </View>
     )
 }

@@ -39,9 +39,11 @@ const Login = () => {
 
     useEffect(() => {
         if (isSuccess && apiData) {
-            const { data: { data } } = apiData;
-            if (data.role === 'SUPER_ADMIN' || data.role === 'ADMIN') {
+            const { data } = apiData;
+            console.log(data);
+            if (data.role === 'TEACHER' || data.role === 'ADMIN') {
                 localStorage.setItem('authToken', data.token);
+                localStorage.setItem('userRole', data.role);
                 return navigate('/');
             } else {
                 alert('Unauthorized role for admin portal.');

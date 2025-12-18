@@ -1,29 +1,27 @@
 {
     "expo": {
-        "name": "EduDash_ReactNative",
-        "slug": "EduDash_ReactNative",
+        "name": "EduDash",
+        "slug": "EduDash",
         "version": "1.0.0",
         "orientation": "portrait",
-        "icon": "./assets/images/icon.png",
-        "scheme": "edudashreactnative",
+        "icon": "./assets/logo.png",
+        "scheme": "edudash",
         "userInterfaceStyle": "automatic",
         "newArchEnabled": true,
         "ios": {
-            "supportsTablet": true
+            "supportsTablet": true,
+            "bundleIdentifier": "com.educodes.edudash"
         },
         "android": {
+            "package": "com.educodes.edudash",
             "adaptiveIcon": {
-                "backgroundColor": "#E6F4FE",
-                "foregroundImage": "./assets/images/android-icon-foreground.png",
-                "backgroundImage": "./assets/images/android-icon-background.png",
-                "monochromeImage": "./assets/images/android-icon-monochrome.png"
+                "backgroundColor": "#4f46e5"
             },
             "edgeToEdgeEnabled": true,
             "predictiveBackGestureEnabled": false
         },
         "web": {
             "output": "static",
-            "favicon": "./assets/images/favicon.png",
             "bundler": "metro"
         },
         "plugins": [
@@ -31,7 +29,7 @@
             [
                 "expo-splash-screen",
                 {
-                    "image": "./assets/images/splash-icon.png",
+                    "image": "./assets/logo.png",
                     "imageWidth": 200,
                     "resizeMode": "contain",
                     "backgroundColor": "#ffffff",
@@ -39,22 +37,19 @@
                         "backgroundColor": "#000000"
                     }
                 }
-            ],
-            [
-                "expo-font",
-                {
-                    "fonts": [
-                        "./assets/fonts/ubuntu/Ubuntu-Regular.ttf",
-                        "./assets/fonts/ubuntu/Ubuntu-Light.ttf",
-                        "./assets/fonts/ubuntu/Ubuntu-Medium.ttf",
-                        "./assets/fonts/ubuntu/Ubuntu-Bold.ttf"
-                    ]
-                }
             ]
         ],
         "experiments": {
             "typedRoutes": true,
             "reactCompiler": true
+        },
+        "updates": {
+            "enabled": true,
+            "checkAutomatically": "ON_LOAD",
+            "fallbackToCacheTimeout": 0
+        },
+        "runtimeVersion": {
+            "policy": "appVersion"
         }
     }
 }

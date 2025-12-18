@@ -7,6 +7,7 @@ import { testConnection } from './db/connection';
 import { errorHandler } from './middleware/errorHandler';
 import { notFound } from './middleware/notFound';
 import { isAuthenticated } from './middleware/auth';
+import job from './config/cron';
 
 import authRoutes from './routes/authRoutes';
 import courseRoutes from './routes/courseRoutes';
@@ -20,12 +21,16 @@ import userRoutes from './routes/userRoutes';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
+
+if(process.env.NODE_ENV === 'production') job.start();
 
 // Middleware
 app.use(helmet());
+const allowedOrigins = [process.env.CORS_ORIGIN, 'http://localhost:5173'].filter(Boolean) as string[];
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: allowedOrigins,
     credentials: true
 }));
 

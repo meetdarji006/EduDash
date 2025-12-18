@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useCourses from "../../hooks/useCourses";
 import useSubjects from "../../hooks/useSubjects";
 
@@ -6,8 +6,20 @@ import CoursesColumn from "../courses/CoursesColumn";
 import SubjectsColumn from "../courses/SubjectsColumn";
 import AddSubjectModal from "../courses/AddSubjectModal";
 import AddCourseModal from "../courses/AddCourseModal";
+import { useNavigate } from "react-router-dom";
 
 const CourseManager = () => {
+
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const role = localStorage.getItem('userRole');
+        console.log(role);
+        if (role !== 'ADMIN') {
+            navigate('/');
+        }
+    }, [navigate])
+
     const [selectedCourse, setSelectedCourse] = useState('');
     const [semester, setSemester] = useState(1);
 

@@ -4,17 +4,10 @@ import Button from "../../components/Button";
 import SelectField from '../SelectField';
 
 const AttendanceHeader = ({
-    courses = [],
-    courseId,
-    setCourseId,
-    semesters = [],
-    semester,
-    setSemester,
-    selectedDate,
-    setSelectedDate,
     handleSave,
     isSaving,
     isPending,
+    selectedDate, // Still needed for the title date display
     dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
 }) => {
     return (
@@ -25,41 +18,14 @@ const AttendanceHeader = ({
                     Marking for {new Date(selectedDate).toLocaleDateString('en-US', dateOptions)}
                 </p>
             </div>
-            <div className="flex justify-center items-center gap-3 w-full md:w-auto">
-                <div className="flex gap-4">
-                    <div className="w-48">
-                        <SelectField
-                            label="Course"
-                            options={courses}
-                            value={courseId}
-                            onChange={(e) => setCourseId(e.target.value)}
-                        />
-                    </div>
-                    <div className="w-48">
-                        <SelectField
-                            label="Semester"
-                            options={semesters}
-                            value={semester}
-                            onChange={(e) => setSemester(e.target.value)}
-                        />
-                    </div>
-                </div>
-                <div className="relative flex-1 md:flex-none">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                    <input
-                        type="date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
-                    />
-                </div>
+            <div className="flex items-center gap-3">
                 <Button
-                    variant="success"
-                    onClick={handleSave}
                     icon={Save}
+                    onClick={handleSave}
                     disabled={isSaving || isPending}
+                    className="shadow-lg shadow-indigo-500/20"
                 >
-                    {isSaving ? 'Saving...' : 'Save'}
+                    {isSaving ? 'Saving...' : 'Save Attendance'}
                 </Button>
             </div>
         </div>
