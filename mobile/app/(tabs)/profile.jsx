@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
+    ActivityIndicator,
     Alert,
     Modal,
     ScrollView,
@@ -15,7 +16,14 @@ import Text from "../../components/ui/Text";
 // ==========================================
 // Helpers & Config
 // ==========================================
+const getOrdinal = (n) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return s[(v - 20) % 10] || s[v] || s[0];
+};
+
 const getSubjectIcon = (subjectName) => {
+    if (!subjectName) return { name: 'book', color: '#64748b', bg: 'bg-slate-50' };
     const lower = subjectName.toLowerCase();
     if (lower.includes('data') || lower.includes('algo')) return { name: 'git-branch', color: '#6366f1', bg: 'bg-indigo-50' };
     if (lower.includes('database') || lower.includes('sql')) return { name: 'server', color: '#0ea5e9', bg: 'bg-sky-50' };
@@ -61,9 +69,6 @@ const SubjectItem = ({ code, name }) => {
                     </View>
                 </View>
             </View>
-
-            {/* Chevron */}
-            <Feather name="chevron-right" size={18} color="#cbd5e1" />
         </View>
     );
 };
@@ -92,8 +97,11 @@ import { useAuth } from "../../context/AuthContext";
 
 export default function ProfileScreen() {
     const router = useRouter();
-    const { signOut } = useAuth();
+    const { signOut, user: userData, isLoading } = useAuth(); // Renaming 'user' to 'userData' to match existing logic
     const [isPasswordModalVisible, setPasswordModalVisible] = useState(false);
+
+    // No longer need local query, useAuth manages it
+    const error = !userData && !isLoading; // Simple error assumption if no user data after loading
 
     const handleSignOut = () => {
         Alert.alert(
@@ -106,26 +114,47 @@ export default function ProfileScreen() {
         );
     };
 
-    const user = {
-        firstName: "Meet",
-        lastName: "Darji",
-        id: "2021-CS-045",
-        course: "B.Tech CSE",
-        semester: "6th Sem",
-        email: "rahul.sharma@college.edu",
-        subjects: [
-            { code: "CS-301", name: "Data Structures & Algorithms" },
-            { code: "CS-302", name: "Database Management Systems" },
-            { code: "MA-201", name: "Linear Algebra" },
-            { code: "CS-310", name: "Web Technologies Lab" }
-        ]
-    };
+    if (isLoading) {
+        return (
+            <View className="flex-1 bg-[#f4f4f4] justify-center items-center">
+                <SecondaryHeader title="Profile" />
+                <ActivityIndicator size="large" color="#4F46E5" />
+            </View>
+        );
+    }
+
+    if (error || !userData) {
+        return (
+            <View className="flex-1 bg-[#f4f4f4]">
+                <SecondaryHeader title="Profile" />
+                <View className="flex-1 justify-center items-center p-6">
+                    <Feather name="alert-circle" size={48} color="#EF4444" />
+                    <Text className="text-slate-600 font-bold mt-4 text-center">Failed to load profile</Text>
+                    <TouchableOpacity onPress={() => router.replace("/(auth)/login")} className="mt-4 px-6 py-2 bg-indigo-600 rounded-lg">
+                        <Text className="text-white font-bold">Details</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
+
+    const { name, studentDetails, courseName, subjects = [] } = userData;
+    const enrollment = studentDetails?.rollNo || "N/A";
+    const semester = studentDetails?.semester ? `${studentDetails.semester}${getOrdinal(studentDetails.semester)} Sem` : "N/A";
+
+    // Attempt to split name, fallback to full name or "Guest"
+    const nameParts = name ? name.split(' ') : ["Guest", ""];
+
+    // Construct initials properly
+    const initials = name ?
+        (nameParts[0][0] + (nameParts.length > 1 ? nameParts[1][0] : '')).toUpperCase()
+        : "G";
 
     return (
-        <View className="flex-1 mx-5 bg-[#f4f4f4]">
+        <View className="flex-1 bg-[#f4f4f4]">
             <SecondaryHeader title="Profile" />
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+            <ScrollView className='px-5' showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
 
                 {/* --- 1. HEADER & AVATAR --- */}
                 <View className="items-center mt-6 mb-8">
@@ -133,23 +162,23 @@ export default function ProfileScreen() {
                         <View className="w-28 h-28 bg-white rounded-full p-1 border-2 border-indigo-100 mb-4 shadow-sm">
                             <View className="flex-1 bg-indigo-600 rounded-full items-center justify-center">
                                 <Text style={{ fontWeight: 800 }} className="text-3xl text-white">
-                                    {user.firstName[0]}{user.lastName[0]}
+                                    {initials}
                                 </Text>
                             </View>
                         </View>
                     </View>
 
                     <Text style={{ fontWeight: 800 }} className="text-2xl text-slate-900 mb-1">
-                        {user.firstName} {user.lastName}
+                        {name}
                     </Text>
-                    <Text style={{ fontWeight: 700 }} className="text-slate-400 text-xs uppercase tracking-wider">{user.id}</Text>
+                    <Text style={{ fontWeight: 700 }} className="text-slate-400 text-xs uppercase tracking-wider">{enrollment}</Text>
                 </View>
 
                 {/* --- 2. KEY STATS (No Credits) --- */}
                 <View className="mb-8 flex-row">
-                    <ProfileStat label="Program" value="B.Tech" icon="book-open" />
-                    <ProfileStat label="Semester" value="6th" icon="calendar" />
-                    <ProfileStat label="CGPA" value="9.2" icon="award" />
+                    <ProfileStat label="Program" value={courseName.toUpperCase() || "N/A"} icon="book-open" />
+                    <ProfileStat label="Semester" value={studentDetails?.semester || "-"} icon="calendar" />
+                    <ProfileStat label="CGPA" value="-" icon="award" />
                 </View>
 
                 {/* --- 3. ENROLLED SUBJECTS --- */}
@@ -159,14 +188,20 @@ export default function ProfileScreen() {
                             Academics
                         </Text>
                         <Text style={{ fontWeight: 700 }} className="text-indigo-600 text-xs">
-                            {user.subjects.length} Subjects
+                            {subjects.length} Subjects
                         </Text>
                     </View>
 
                     <View>
-                        {user.subjects.map((sub, index) => (
-                            <SubjectItem key={index} code={sub.code} name={sub.name} />
-                        ))}
+                        {subjects.length > 0 ? (
+                            subjects.map((sub, index) => (
+                                <SubjectItem key={sub.id || index} code={sub.code || `SUB-${index + 1}`} name={sub.name} />
+                            ))
+                        ) : (
+                            <View className="bg-white p-4 rounded-2xl border border-slate-100 items-center">
+                                <Text className="text-slate-400 text-sm">No subjects enrolled</Text>
+                            </View>
+                        )}
                     </View>
                 </View>
 
@@ -177,7 +212,7 @@ export default function ProfileScreen() {
                     </Text>
 
                     <MenuItem icon="lock" label="Change Password" onPress={() => setPasswordModalVisible(true)} />
-                    <MenuItem icon="bell" label="Notifications" onPress={() => { }} />
+                    {/* <MenuItem icon="bell" label="Notifications" onPress={() => { }} /> */}
 
                     <View className="mt-2">
                         <MenuItem icon="log-out" label="Sign Out" isDestructive onPress={handleSignOut} />
@@ -191,8 +226,14 @@ export default function ProfileScreen() {
                 <View className="flex-1 bg-slate-900/40 justify-end">
                     <TouchableOpacity className="absolute inset-0" onPress={() => setPasswordModalVisible(false)} />
                     <View className="bg-white rounded-t-[32px] p-6 pb-10">
-                        <View className="items-center mb-6">
+                        <View className="items-center mb-6 relative">
                             <View className="w-12 h-1.5 bg-slate-200 rounded-full" />
+                            <TouchableOpacity
+                                onPress={() => setPasswordModalVisible(false)}
+                                className="absolute right-0 -top-2 p-2 bg-slate-100 rounded-full"
+                            >
+                                <Feather name="x" size={20} color="#64748b" />
+                            </TouchableOpacity>
                         </View>
                         <Text style={{ fontWeight: 700 }} className="text-xl text-slate-900 mb-6">Update Security</Text>
 
@@ -201,7 +242,7 @@ export default function ProfileScreen() {
                                 <Text style={{ fontWeight: 700 }} className="text-[10px] text-slate-400 uppercase mb-1">New Password</Text>
                                 <TextInput style={{ fontWeight: 700 }} secureTextEntry className="text-slate-900 text-base" placeholder="••••••••" />
                             </View>
-                            <View className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+                            <View className="mt-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
                                 <Text style={{ fontWeight: 700 }} className="text-[10px] text-slate-400 mt-2 uppercase mb-1">Confirm Password</Text>
                                 <TextInput style={{ fontWeight: 700 }} secureTextEntry className="text-slate-900 font-bold text-base" placeholder="••••••••" />
                             </View>

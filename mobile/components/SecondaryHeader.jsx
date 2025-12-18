@@ -3,9 +3,12 @@ import { useRouter } from "expo-router";
 import { TouchableOpacity, View } from "react-native";
 import Text from "./ui/Text";
 
+import { useNotification } from "../context/NotificationContext";
+
 
 const SecondaryHeader = ({ title }) => {
     const router = useRouter();
+    const { openNotifications } = useNotification();
 
     return (
         <View className="flex-row items-center justify-between py-4 px-5">
@@ -24,10 +27,10 @@ const SecondaryHeader = ({ title }) => {
             </Text>
 
             {/* RIGHT: Action Button */}
-            <TouchableOpacity className="relative w-12 h-12 bg-white rounded-full items-center justify-center shadow-sm shadow-gray-200">
+            <TouchableOpacity onPress={openNotifications} className="relative w-12 h-12 bg-white rounded-full items-center justify-center shadow-sm shadow-gray-200">
                 <Feather name="bell" size={24} color="#1F2937" />
 
-                <View className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+                {/* <View className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" /> */}
             </TouchableOpacity>
         </View>
     );

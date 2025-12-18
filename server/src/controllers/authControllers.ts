@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
 import { db } from '../db/connection';
-import { users, students } from '../db/schema';
+import { users, students, courses, subjects } from '../db/schema';
 import { STATUS_CODES } from '../utils/constants';
 import { ApiResponse, ErrorResponse } from '../utils/response';
 import jwt from 'jsonwebtoken';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { ComparePassword } from '../utils/bcryptCompare';
 
 export const login = async (req: Request, res: Response) => {
-    console.log("Login attempt:", req.body);
+    //console.log("Login attempt:", req.body);
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -59,7 +59,25 @@ export const getMe = async (req: Request, res: Response) => {
         if (user.role === 'STUDENT') {
             const [student] = await db.select().from(students).where(eq(students.userId, userId));
             if (student) {
-                responseData = { ...responseData, ...student };
+                responseData = { ...responseData, studentDetails: student };
+
+                if (student.courseId) {
+                    const [course] = await db.select().from(courses).where(eq(courses.id, student.courseId));
+                    if (course) {
+                        responseData.courseName = course.name;
+                    }
+
+                    const studentSubjects = await db.select()
+                        .from(subjects)
+                        .where(
+                            and(
+                                eq(subjects.courseId, student.courseId),
+                                eq(subjects.semester, student.semester)
+                            )
+                        );
+
+                    responseData.subjects = studentSubjects;
+                }
             }
         }
 

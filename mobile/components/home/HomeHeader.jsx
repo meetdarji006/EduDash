@@ -1,9 +1,11 @@
 import { Feather } from '@expo/vector-icons';
 import { TouchableOpacity, View } from 'react-native';
 import { theme } from '../../constants/colors';
+import { useNotification } from '../../context/NotificationContext';
 import Text from "../ui/Text";
 
 const HomeHeader = ({ userName = "", setScheduleModelopen }) => {
+    const { openNotifications } = useNotification();
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'short' });
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
@@ -17,7 +19,7 @@ const HomeHeader = ({ userName = "", setScheduleModelopen }) => {
                     <Text style={{ fontWeight: 700 }} className="text-[#6B7280] text-xs uppercase">{today}</Text>
                 </View>
 
-                <TouchableOpacity className="relative p-2">
+                <TouchableOpacity onPress={openNotifications} className="relative p-2">
                     <Feather name="bell" size={24} color="#6B7280" />
                     {/* <View
                         className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" /> */}

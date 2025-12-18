@@ -8,7 +8,7 @@ import { eq } from 'drizzle-orm';
 export const getAllCourse = async (req: Request, res: Response) => {
     try {
         const courseList = await db.select().from(courses);
-        console.log(courseList);
+        //console.log(courseList);
         return res.status(STATUS_CODES.OK).json(new ApiResponse(STATUS_CODES.OK, courseList, "Courses Fetched Successfully"));
     } catch (error) {
         return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json(new ErrorResponse(STATUS_CODES.INTERNAL_SERVER_ERROR, error instanceof Error ? error.message : 'Unknown error'));
@@ -32,8 +32,8 @@ export const createCourse = async (req: Request, res: Response) => {
 export const deleteCourse = async (req: Request, res: Response) => {
     try {
         const { courseid } = req.params;
-        
-        console.log(courseid)
+
+        //console.log(courseid)
         if (!courseid) {
             return res.status(STATUS_CODES.BAD_REQUEST).json(new ErrorResponse(STATUS_CODES.BAD_REQUEST, "No CourseId Found"));
         }
@@ -64,7 +64,7 @@ export const updateCourse = async (req: Request, res: Response) => {
             updateQuery.duration = duration;
         }
 
-        await db.update(courses).set(updateQuery).where(eq(courses.id, courseid));
+        await db.update(courses).set(updateQuery).where(eq(courses.id, courseid as string));
         return res.status(STATUS_CODES.OK).json(new ApiResponse(STATUS_CODES.OK, null, "Updated Successfully"));
 
     } catch (error) {

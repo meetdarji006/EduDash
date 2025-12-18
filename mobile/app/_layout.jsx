@@ -3,30 +3,42 @@ import { useFonts } from 'expo-font';
 import { Stack } from "expo-router";
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from "expo-status-bar";
-import { useCallback } from 'react';
+import * as Updates from 'expo-updates';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { NotificationProvider } from '../context/NotificationContext';
 import "../global.css";
 
 SplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            retry: 1,
+            staleTime: 1000 * 60,
+            refetchOnWindowFocus: false
+        }
+    }
+});
+
+import LoadingScreen from '../components/ui/LoadingScreen';
 
 function RootLayoutNav({ fontsLoaded }) {
     const { isLoading } = useAuth();
 
-    const onLayoutRootView = useCallback(async () => {
-        if (fontsLoaded && !isLoading) {
-            await SplashScreen.hideAsync();
+    useEffect(() => {
+        if (fontsLoaded) {
+            SplashScreen.hideAsync();
         }
-    }, [fontsLoaded, isLoading]);
+    }, [fontsLoaded]);
 
     if (!fontsLoaded || isLoading) {
-        return null; // Keep splash screen visible while loading
+        return <LoadingScreen />;
     }
 
     return (
-        <View onLayout={onLayoutRootView} style={{ flex: 1, backgroundColor: "#f4f4f4" }}>
+        <View style={{ flex: 1, backgroundColor: "#f4f4f4" }}>
             <Stack screenOptions={{ headerShown: false }} />
             <StatusBar style="dark" />
         </View>
@@ -42,10 +54,28 @@ export default function RootLayout() {
         'Outfit_700': require("../assets/fonts/outfit/Outfit-Bold.ttf"),
     });
 
+    useEffect(() => {
+        async function checkUpdate() {
+            try {
+                const update = await Updates.checkForUpdateAsync();
+                if (update.isAvailable) {
+                    await Updates.fetchUpdateAsync();
+                    await Updates.reloadAsync();
+                }
+            } catch (err) {
+                console.log('Update check failed:', err);
+            }
+        }
+
+        checkUpdate();
+    }, []);
+
     return (
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
-                <RootLayoutNav fontsLoaded={fontsLoaded} />
+                <NotificationProvider>
+                    <RootLayoutNav fontsLoaded={fontsLoaded} />
+                </NotificationProvider>
             </AuthProvider>
         </QueryClientProvider>
     );

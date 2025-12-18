@@ -30,8 +30,7 @@ export default function LoginScreen() {
             onSuccess: ({ data }) => {
                 // Assuming the API returns a token in data.token
                 // Adjust based on actual API response structure
-                console.log(data);
-                const token = data.token;
+                const { token, user } = data;
                 if (token) {
                     signIn(token);
                     router.replace("/(tabs)"); // Navigate to home/dashboard

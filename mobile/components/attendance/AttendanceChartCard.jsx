@@ -179,11 +179,17 @@ const AttendanceChart = ({ data: attendanceData }) => {
                     </View>
                     <View>
                         <Text style={{ fontWeight: 700 }} className="text-[9px] uppercase text-slate-400  mb-0.5">Lowest</Text>
-                        <View className="flex-row items-baseline">
-                            <Text style={{ fontWeight: 800 }} className="text-lg text-slate-800">{lowest ? lowest.value : 0}</Text>
-                            <Text style={{ fontWeight: 800 }} className="text-xs text-slate-400">%</Text>
-                        </View>
-                        <Text style={{ fontWeight: 500 }} className="text-[10px] text-rose-500">{lowest?.fullDate ? lowest.fullDate.toLocaleString('default', { month: 'long' }) : '-'}</Text>
+                        {chartData.length > 1 ? (
+                            <>
+                                <View className="flex-row items-baseline">
+                                    <Text style={{ fontWeight: 800 }} className="text-lg text-slate-800">{lowest ? lowest.value : 0}</Text>
+                                    <Text style={{ fontWeight: 800 }} className="text-xs text-slate-400">%</Text>
+                                </View>
+                                <Text style={{ fontWeight: 500 }} className="text-[10px] text-rose-500">{lowest?.fullDate ? lowest.fullDate.toLocaleString('default', { month: 'long' }) : '-'}</Text>
+                            </>
+                        ) : (
+                            <Text style={{ fontWeight: 800 }} className="text-lg text-slate-800">-</Text>
+                        )}
                     </View>
                 </View>
             </View>

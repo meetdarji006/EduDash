@@ -13,9 +13,9 @@ import { useAttendanceQuery } from "../../hooks/useAttendance";
 export default function Index() {
     const [scheduleModalOpen, setScheduleModelopen] = useState(false)
 
-    const { userData } = useAuth();
-    const studentId = userData?.data?.id;
-    const { data: attendanceData, isLoading, error } = useAttendanceQuery(studentId);
+    const { user } = useAuth();
+    const studentId = user?.studentDetails?.id;
+    const { data: attendanceData = [], isLoading, error } = useAttendanceQuery(studentId);
 
     const dateObj = new Date();
     const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
@@ -59,22 +59,23 @@ export default function Index() {
         >
             <ScheduleModel visible={scheduleModalOpen} onClose={() => setScheduleModelopen(false)} />
             <View style={{ backgroundColor: theme.background }} className="flex-1">
-                <HomeHeader userName={userData?.data?.name || "Student"} setScheduleModelopen={setScheduleModelopen} />
+                <HomeHeader userName={user?.name || "Student"} setScheduleModelopen={setScheduleModelopen} />
 
                 {isLoading ? (
                     <View className="h-40 justify-center items-center">
                         <ActivityIndicator size="large" color="#2563eb" />
                     </View>
-                ) : error ? (
-                    <View className="p-4 bg-red-50 rounded-lg">
-                        <Text className="text-red-500">Failed to load attendance data</Text>
+                ) : (error || !attendanceData || (Array.isArray(attendanceData) && attendanceData.length === 0) || (typeof attendanceData === 'object' && Object.keys(attendanceData).length === 0)) ? (
+                    <View className="h-80 justify-center items-center">
+                        <Text className="text-slate-500 text-lg font-bold">Something Wrong Happens</Text>
+                        <Text className="text-slate-400 text-sm">try again later</Text>
                     </View>
                 ) : (
                     <>
-                        <AttendanceReportCard data={monthData?.stats || {}} />
+                        <AttendanceReportCard data={attendanceData} />
                         <AttendancePulseCard thisMonth={currentMonthPercentage} lastMonth={previousMonthPercentage} />
-                        <AttendanceLedgerCard data={monthData} />
-                        <AttendanceStackedChart data={attendanceData} />
+                        <AttendanceLedgerCard data={monthData ? { ...monthData, records: monthData.records?.slice(0, 6) } : monthData} />
+                        <AttendanceStackedChart data={attendanceData && monthKey ? { [monthKey]: attendanceData[monthKey] } : {}} />
                     </>
                 )}
 

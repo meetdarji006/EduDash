@@ -1,225 +1,272 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Save, Filter, Search, Award, AlertCircle } from 'lucide-react';
 import Button from '../Button';
-
-// --- Local Mock Data for Dropdowns ---
-const COURSES = ['B.Tech CSE', 'B.Tech ME', 'B.Com', 'MBA'];
-const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
-const SUBJECTS = [
-    { id: 's1', name: 'Data Structures', code: 'CS-301' },
-    { id: 's2', name: 'Database Management', code: 'CS-302' },
-    { id: 's3', name: 'Linear Algebra', code: 'MA-201' },
-];
-const TESTS = [
-    { id: 't1', title: 'Mid-Term Exam', maxMarks: 50 },
-    { id: 't2', title: 'Unit Test 1', maxMarks: 20 },
-    { id: 't3', title: 'Final Exam', maxMarks: 100 },
-];
-
-// --- Mock Students Data ---
-const STUDENTS_DATA = [
-    { id: '1', name: 'Rahul Sharma', rollNo: '2021-CS-045', course: 'B.Tech CSE', semester: 6 },
-    { id: '2', name: 'Priya Verma', rollNo: '2022-EC-012', course: 'B.Tech CSE', semester: 6 },
-    { id: '3', name: 'Amit Patel', rollNo: '2023-CS-102', course: 'B.Tech CSE', semester: 6 },
-    { id: '4', name: 'Sneha Gupta', rollNo: '2021-CS-050', course: 'B.Tech CSE', semester: 6 },
-];
+import useSubjects from '../../hooks/useSubjects';
+import useTests from '../../hooks/useTests';
+import useStudents from '../../hooks/useStudents';
+import { useMarks, useSaveMarks } from '../../hooks/useMarks';
+import { useCourseContext } from '../../context/CourseContext';
+import PageHeader from '../common/PageHeader';
+import Loading from '../common/Loading';
+import EmptyState from '../common/EmptyState';
+import SearchBar from '../common/SearchBar';
 
 const MarksManager = () => {
-    // Filters
+    // 1. Global Context
+    const { selectedCourseId, selectedSemester } = useCourseContext();
+
+    // 2. Filters (Local) - Only Subject and Test are local now
     const [filters, setFilters] = useState({
-        course: '',
-        semester: '',
         subject: '',
         test: ''
     });
 
+    // Reset local filters when global context changes
+    useEffect(() => {
+        setFilters({ subject: '', test: '' });
+    }, [selectedCourseId, selectedSemester]);
+
     // State
     const [marksData, setMarksData] = useState({});
-    const [isTableVisible, setIsTableVisible] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // --- Hooks ---
+    // const { data: courses = [] } = useCourses(); // Removed
+    const { data: subjects = [] } = useSubjects(selectedCourseId, selectedSemester);
+    const { data: tests = [] } = useTests(selectedCourseId, selectedSemester);
+
+    const { data: students = [], isPending: isStudentsLoading } = useStudents(selectedCourseId, selectedSemester);
+
+    // Fetch existing marks for the selected test
+    const { data: existingMarks, isPending: isMarksLoading, refetch: refetchMarks } = useMarks(filters.test);
+
+    // Save mutation
+    const saveMarksMutation = useSaveMarks();
 
     // Derived Data
-    const selectedTest = TESTS.find(t => t.id === filters.test);
+    const selectedTest = tests.find(t => t.id === filters.test);
+
+    // Filtered Students
+    const filteredStudents = students.filter(student =>
+        student?.name?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+        student?.rollNo?.toString()?.includes(searchTerm)
+    );
+
+    // Effect to populate marks when test or student data changes
+    useEffect(() => {
+        if (existingMarks?.length > 0) {
+            const initialMarks = {};
+            existingMarks.forEach(record => {
+                initialMarks[record.studentId] = record.marks;
+            });
+            setMarksData(initialMarks);
+        } else {
+            setMarksData({});
+        }
+    }, [existingMarks, filters.test]);
 
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
-        // Hide table if filters change to force "Load"
-        setIsTableVisible(false);
-    };
-
-    const handleLoadStudents = () => {
-        if (filters.course && filters.semester && filters.subject && filters.test) {
-            setIsTableVisible(true);
+        // Reset downstream filters
+        if (key === 'subject') {
+            setFilters(prev => ({ ...prev, subject: value, test: '' }));
         }
     };
 
     const handleMarkChange = (studentId, value) => {
+        // console.log(studentId, value);
         if (selectedTest && Number(value) > selectedTest.maxMarks) return;
         setMarksData(prev => ({ ...prev, [studentId]: value }));
     };
 
     const handleSave = () => {
-        console.log("Saving marks for:", filters, marksData);
-        alert("Marks Saved Successfully!");
+        if (!selectedTest) return;
+
+        const payload = {
+            testId: selectedTest.id,
+            marksDetails: Object.entries(marksData).map(([studentId, marks]) => ({
+                studentId,
+                marks: Number(marks)
+            }))
+        };
+
+        saveMarksMutation.mutate(payload, {
+            onSuccess: () => {
+                alert("Marks Saved Successfully!");
+            },
+            onError: (error) => {
+                console.error("Failed to save marks:", error);
+                alert("Failed to save marks. Please try again.");
+            }
+        });
     };
 
-    return (
-        <div className="space-y-6">
+    // console.log(filteredStudents)
 
-            {/* 1. Header & Context */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-black text-slate-900">Marks Management</h1>
-                    <p className="text-slate-500 text-sm">Enter and update student grades</p>
-                </div>
-                {isTableVisible && (
-                    <div className="flex items-center gap-3 bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100">
-                        <Award size={18} className="text-indigo-600" />
-                        <div>
-                            <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Current Test</p>
-                            <p className="text-sm font-bold text-indigo-900 leading-none">{selectedTest?.title} (Max: {selectedTest?.maxMarks})</p>
-                        </div>
-                    </div>
-                )}
+    return (
+        <div className="flex flex-col h-[calc(100vh-9rem)] space-y-6">
+
+            {/* 1. Page Header */}
+            <div className="shrink-0">
+                <PageHeader
+                    title="Marks Management"
+                    description="Enter and update student grades & exam results"
+                    icon={Award}
+                />
             </div>
 
-            {/* 2. Filter Toolbar */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            {/* 2. Filter & Context Bar */}
+            <div className="shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
 
-                    {/* Course Select */}
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Course</label>
-                        <select
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                            value={filters.course}
-                            onChange={(e) => handleFilterChange('course', e.target.value)}
-                        >
-                            <option value="">Select Course...</option>
-                            {COURSES.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                    </div>
+                {/* Search Bar (Left) */}
+                <SearchBar
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    label=""
+                    className="w-full md:w-80"
+                    placeholder="Search students..."
+                />
 
-                    {/* Semester Select */}
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Semester</label>
-                        <select
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                            value={filters.semester}
-                            onChange={(e) => handleFilterChange('semester', e.target.value)}
-                        >
-                            <option value="">Select Sem...</option>
-                            {SEMESTERS.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                    </div>
-
+                {/* Filters (Right) */}
+                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
                     {/* Subject Select */}
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Subject</label>
+                    <div className="w-full md:w-56 relative">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <Filter size={18} />
+                        </div>
                         <select
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                            className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 appearance-none"
                             value={filters.subject}
                             onChange={(e) => handleFilterChange('subject', e.target.value)}
                         >
                             <option value="">Select Subject...</option>
-                            {SUBJECTS.map(s => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
+                            {subjects.map(s => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
                         </select>
                     </div>
 
                     {/* Test Select */}
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Test / Exam</label>
+                    <div className="w-full md:w-56 relative">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <Award size={18} />
+                        </div>
                         <select
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                            className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 appearance-none"
                             value={filters.test}
                             onChange={(e) => handleFilterChange('test', e.target.value)}
+                            disabled={!filters.subject}
                         >
                             <option value="">Select Test...</option>
-                            {TESTS.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+                            {tests.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
                         </select>
                     </div>
-                </div>
-
-                <div className="flex justify-end">
-                    <Button
-                        onClick={handleLoadStudents}
-                        disabled={!filters.course || !filters.semester || !filters.subject || !filters.test}
-                        className={!filters.test ? 'opacity-50 cursor-not-allowed' : ''}
-                    >
-                        Load Student List
-                    </Button>
                 </div>
             </div>
 
             {/* 3. Empty State or Table */}
-            {!isTableVisible ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm">
-                        <Filter className="text-slate-300" size={32} />
-                    </div>
-                    <h3 className="text-slate-900 font-bold text-lg">No Data Loaded</h3>
-                    <p className="text-slate-500 text-sm max-w-xs text-center mt-1">
-                        Please select a Course, Semester, Subject, and Test from the filters above to start grading.
-                    </p>
-                </div>
+            {!filters.test ? (
+                <EmptyState
+                    title="No Test Selected"
+                    description="Select a Subject and Test from the filters above to start grading."
+                    icon={Award}
+                />
             ) : (
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex-1 overflow-hidden flex flex-col min-h-0 animate-in fade-in slide-in-from-bottom-8 duration-700">
 
                     {/* Table Header Controls */}
-                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                    <div className="shrink-0 px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 backdrop-blur-sm">
                         <div className="flex items-center gap-2">
-                            <Search size={16} className="text-slate-400" />
-                            <input
-                                placeholder="Search student..."
-                                className="bg-transparent text-sm font-medium focus:outline-none text-slate-600 placeholder:text-slate-400"
-                            />
+                            <h3 className="font-semibold text-slate-500 text-xs uppercase tracking-wider">
+                                Student List <span className="text-slate-400 ml-1">({filteredStudents.length})</span>
+                            </h3>
                         </div>
-                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                            Total Students: <span className="text-slate-900">{STUDENTS_DATA.length}</span>
-                        </div>
+                        {selectedTest && (
+                            <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 bg-white px-4 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                                <span className="uppercase tracking-wider text-[10px] font-bold text-slate-400">Max:</span>
+                                <span className="text-indigo-600 font-bold text-sm">{selectedTest.maxMarks}</span>
+                            </div>
+                        )}
                     </div>
 
                     {/* The Grid Table */}
-                    <table className="w-full">
-                        <thead className="bg-white border-b border-slate-100 text-left">
-                            <tr>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider w-16">#</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Student Details</th>
-                                <th className="px-6 py-4 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider w-48">Marks Obtained</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                            {STUDENTS_DATA.map((student, index) => (
-                                <tr key={student.id} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="px-6 py-4 text-xs font-bold text-slate-400">{index + 1}</td>
-                                    <td className="px-6 py-4">
-                                        <div>
-                                            <div className="font-bold text-slate-900 text-sm">{student.name}</div>
-                                            <div className="text-xs text-slate-500 font-mono mt-0.5">{student.rollNo}</div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <input
-                                                type="number"
-                                                className={`w-24 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-right focus:outline-none focus:ring-2 transition-all text-slate-900 ${marksData[student.id] ? 'border-indigo-300 bg-indigo-50/30 ring-indigo-100' : ''
-                                                    }`}
-                                                placeholder="-"
-                                                min="0"
-                                                max={selectedTest?.maxMarks}
-                                                value={marksData[student.id] || ''}
-                                                onChange={(e) => handleMarkChange(student.id, e.target.value)}
-                                            />
-                                            <span className="text-xs font-bold text-slate-400 w-8 text-right">/ {selectedTest?.maxMarks}</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    {isStudentsLoading || isMarksLoading ? (
+                        <div className="flex-1 flex flex-col items-center justify-center">
+                            <Loading text="Loading Marks Data..." size={40} />
+                        </div>
+                    ) : (
+                        <div className="flex-1 overflow-auto relative">
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+                                    <tr>
+                                        <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider w-16">#</th>
+                                        <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Student Profile</th>
+                                        <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider w-48">Marks Obtained</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {filteredStudents.map((student, index) => (
+                                        <tr key={student.id} className="hover:bg-slate-50 transition-colors group">
+                                            <td className="px-6 py-3 text-xs font-semibold text-slate-500">{index + 1}</td>
+                                            <td className="px-6 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs ring-1 ring-indigo-100">
+                                                        {student.name.charAt(0)}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-semibold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">{student.name}</span>
+                                                        <span className="text-xs text-slate-400 font-mono tracking-wide mt-0.5">{student.rollNo}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-3">
+                                                <div className="flex items-center justify-end gap-3">
+                                                    <div className="relative group/input">
+                                                        <input
+                                                            type="number"
+                                                            className={`w-24 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-800 shadow-sm ${marksData[student.id] ? 'bg-indigo-50/10 border-indigo-200 text-indigo-700' : ''
+                                                                }`}
+                                                            placeholder="0"
+                                                            min="0"
+                                                            max={selectedTest?.maxMarks}
+                                                            value={marksData[student.id] || ''}
+                                                            onChange={(e) => handleMarkChange(student.id, e.target.value)}
+                                                        />
+                                                        {Number(marksData[student.id]) > selectedTest?.maxMarks && (
+                                                            <div className="absolute right-0 top-full mt-1 text-[10px] text-rose-500 font-bold flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm border border-rose-100 z-10 whitespace-nowrap">
+                                                                <AlertCircle size={10} />
+                                                                Max allowed: {selectedTest?.maxMarks}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredStudents.length === 0 && (
+                                        <tr>
+                                            <td colSpan="3" className="text-center py-20">
+                                                <div className="flex flex-col items-center justify-center text-slate-400">
+                                                    <Search size={40} className="mb-4 opacity-20" />
+                                                    <p className="font-bold">No students match your search.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
 
                     {/* Footer Actions */}
-                    <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
-                        <Button onClick={handleSave} icon={Save} variant="primary">Save All Marks</Button>
+                    <div className="shrink-0 p-4 border-t border-slate-100 bg-slate-50/50 backdrop-blur-sm flex justify-end">
+                        <Button
+                            onClick={handleSave}
+                            icon={Save}
+                            variant="primary"
+                            disabled={saveMarksMutation.isPending}
+                            className="shadow-xl shadow-indigo-500/20 font-bold px-8 py-2.5 h-auto rounded-xl"
+                        >
+                            {saveMarksMutation.isPending ? 'Saving...' : 'Save Marks'}
+                        </Button>
                     </div>
                 </div>
             )}

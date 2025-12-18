@@ -7,9 +7,9 @@ import { useAuth } from '../../context/AuthContext'
 import { useAttendanceQuery } from '../../hooks/useAttendance'
 
 const AttendanceScreen = () => {
-    const { userData } = useAuth();
-    const studentId = userData?.data?.id;
-    const { data: attendanceData, isLoading, error } = useAttendanceQuery(studentId);
+    const { user } = useAuth();
+    const studentId = user?.studentDetails?.id;
+    const { data: attendanceData = [], isLoading, error } = useAttendanceQuery(studentId);
 
     if (isLoading) {
         return (
@@ -19,11 +19,11 @@ const AttendanceScreen = () => {
         );
     }
 
-    if (error) {
+    if (error || !attendanceData || (Array.isArray(attendanceData) && attendanceData.length === 0) || (typeof attendanceData === 'object' && Object.keys(attendanceData).length === 0)) {
         return (
             <View style={{ backgroundColor: theme.background }} className="flex-1 justify-center items-center p-5">
-                <Text className="text-red-500 text-lg font-bold text-center">Failed to load attendance data</Text>
-                <Text className="text-slate-400 text-center mt-2">Please try again later</Text>
+                <Text className="text-slate-500 text-lg font-bold text-center">Something Wrong Happens</Text>
+                <Text className="text-slate-400 text-center mt-2">try again later</Text>
             </View>
         );
     }
