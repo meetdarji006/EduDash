@@ -6,8 +6,8 @@ import { USER_ROLE } from '../utils/constants';
 const router = Router();
 
 router.get('/', getAllCourse);
-router.post('/', authorizeRoles([USER_ROLE.superadmin]), createCourse);
-router.put('/', authorizeRoles([USER_ROLE.superadmin]), updateCourse);
-router.delete('/:courseid', authorizeRoles([USER_ROLE.superadmin]), deleteCourse);
+router.post('/', authorizeRoles([USER_ROLE.admin]), createCourse);
+router.put('/', authorizeRoles([USER_ROLE.admin]), updateCourse);
+router.delete('/:courseid', authorizeRoles([USER_ROLE.admin]), deleteCourse);
 
 export default router;
