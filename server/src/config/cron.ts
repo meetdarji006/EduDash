@@ -1,13 +1,24 @@
-import cron from "cron";
+import { CronJob } from "cron";
 import https from "https";
 
-const job = new cron.CronJob("*/14 * * * *", function () {
-  https
-    .get(process.env.API_URL, (res) => {
-      if (res.statusCode === 200) console.log("GET request sent successfully");
-      else console.log("GET request failed", res.statusCode);
-    })
-    .on("error", (e) => console.error("Error while sending request", e));
+const job = new CronJob("*/14 * * * *", () => {
+    const url = process.env.API_URL;
+    if (!url) {
+        console.error("API_URL is not defined");
+        return;
+    }
+
+    https
+        .get(url, (res) => {
+            if (res.statusCode === 200) {
+                console.log("Cron ping success");
+            } else {
+                console.log("Cron ping failed:", res.statusCode);
+            }
+        })
+        .on("error", (e) => {
+            console.error("Cron request error:", e.message);
+        });
 });
 
 export default job;
