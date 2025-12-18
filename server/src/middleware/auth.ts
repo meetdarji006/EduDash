@@ -12,34 +12,53 @@ export interface AuthenticatedRequest extends Request {
     userRole?: string;
 }
 
-export const isAuthenticated = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    // console.log("token")
+export const isAuthenticated = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+) => {
     try {
-        const token = req.headers["authorization"]?.split(" ")[1];
-        if (!token || typeof token !== "string") {
-            return res.status(STATUS_CODES.UNAUTHORISED).json(new ErrorResponse(STATUS_CODES.UNAUTHORISED, "Token Required"));
+        const authHeader = req.get("authorization");
+        const token = authHeader?.split(" ")[1];
+
+        if (!token) {
+            return res
+                .status(STATUS_CODES.UNAUTHORISED)
+                .json(new ErrorResponse(STATUS_CODES.UNAUTHORISED, "Token Required"));
         }
 
         const secret = process.env.AUTH_KEY || "";
+        const decoded = jwt.verify(token, secret) as JwtPayload;
 
-        const response = jwt.verify(token, secret) as JwtPayload;
-
-        if (!response || !response.id) {
-            return res.status(STATUS_CODES.UNAUTHORISED).json(new ErrorResponse(STATUS_CODES.UNAUTHORISED, "Invalid Token"));
+        if (!decoded?.id) {
+            return res
+                .status(STATUS_CODES.UNAUTHORISED)
+                .json(new ErrorResponse(STATUS_CODES.UNAUTHORISED, "Invalid Token"));
         }
-        const [user] = await db.select().from(users).where(eq(users.id, response.id));
+
+        const [user] = await db.select().from(users).where(eq(users.id, decoded.id));
 
         if (!user) {
-            return res.status(STATUS_CODES.UNAUTHORISED).json(new ErrorResponse(STATUS_CODES.UNAUTHORISED, "Invalid UserId"));
+            return res
+                .status(STATUS_CODES.UNAUTHORISED)
+                .json(new ErrorResponse(STATUS_CODES.UNAUTHORISED, "Invalid UserId"));
         }
+
         req.userId = user.id;
         req.userRole = user.role;
 
         return next();
     } catch (error) {
-        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json(new ErrorResponse(STATUS_CODES.INTERNAL_SERVER_ERROR, error instanceof Error ? error.message : 'Unknown error'));
+        return res
+            .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+            .json(
+                new ErrorResponse(
+                    STATUS_CODES.INTERNAL_SERVER_ERROR,
+                    error instanceof Error ? error.message : "Unknown error"
+                )
+            );
     }
-}
+};
 
 // export const isSuperAdmin = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
 //     const role = req.userRole;
