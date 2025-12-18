@@ -6,7 +6,7 @@ function useStudents(selectedCourse, semester) {
 
     const { data, isPending, error, isError, status } = useQuery({
         queryKey: ["students", selectedCourse, semester],
-        queryFn: () => api.get(`/users/student`, {
+        queryFn: () => api.get(`/users/students`, {
             params: {
                 courseId: selectedCourse,
                 semester: semester
