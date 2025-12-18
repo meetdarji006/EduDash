@@ -15,7 +15,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module",
   "dependencies": {
     "@types/node": "^25.0.3",
     "bcrypt": "^6.0.0",
